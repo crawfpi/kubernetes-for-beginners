@@ -1,0 +1,19 @@
+Reference - PODs
+A note about creating pods using kubectl run.
+
+
+
+You can create pods from the command line using the below command:
+
+
+
+Create an NGINX Pod
+
+kubectl run nginx --image=nginx
+
+
+
+Kubernetes Concepts - https://kubernetes.io/docs/concepts/
+
+Pod Overview- https://kubernetes.io/docs/concepts/workloads/pods/pod-overview/
+
