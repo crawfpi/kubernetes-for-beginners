@@ -1,0 +1,86 @@
+kubectl create -f replicator-controller-helloworld.yml
+
+# Always has 2 replicas now as that is what is described in the file
+
+crawfpi@pf22z9r820s1:~$ kubectl get po
+NAME                          READY   STATUS    RESTARTS   AGE
+helloworld-controller-867fr   1/1     Running   0          2m15s
+helloworld-controller-sbp8v   1/1     Running   0          2m15s
+
+# Delete one of them and still will recreate a new one
+
+crawfpi@pf22z9r820s1:~$ kubectl delete po helloworld-controller-867fr
+pod "helloworld-controller-867fr" deleted
+
+# now shows one deleting and one being created new
+crawfpi@pf22z9r820s1:~ $ kubectl get po
+NAME                          READY   STATUS        RESTARTS   AGE
+helloworld-controller-867fr   1/1     Terminating   0          2m37s
+helloworld-controller-gd57j   1/1     Running       0          11s
+helloworld-controller-sbp8v   1/1     Running       0          2m37s
+
+crawfpi@pf22z9r820s1:~ $  kubectl scale --replicas=4 -f replicator-controller-helloworld.yml
+replicationcontroller/helloworld-controller scaled
+
+
+crawfpi@pf22z9r820s1:~ $ kubectl get po
+NAME                          READY   STATUS    RESTARTS   AGE
+helloworld-controller-6kh44   1/1     Running   0          5s
+helloworld-controller-gd57j   1/1     Running   0          45s
+helloworld-controller-sbp8v   1/1     Running   0          3m11s
+helloworld-controller-vwhg8   1/1     Running   0          5s
+
+# Get the name of replica controle
+crawfpi@pf22z9r820s1:~$ kubectl get rc
+NAME                    DESIRED   CURRENT   READY   AGE
+helloworld-controller   4         4         4       8m29s
+
+
+# Use the name of the rc controller to scale the pods
+
+
+crawfpi@pf22z9r820s1:~$ kubectl scale --replicas=8 rc/helloworld-controller
+replicationcontroller/helloworld-controller scaled
+
+crawfpi@pf22z9r820s1:~$ kubectl get po
+NAME                          READY   STATUS    RESTARTS   AGE
+helloworld-controller-6kh44   1/1     Running   0          6m32s
+helloworld-controller-gd57j   1/1     Running   0          7m12s
+helloworld-controller-gwrd9   1/1     Running   0          11s
+helloworld-controller-nbzqx   1/1     Running   0          11s
+helloworld-controller-qmz85   1/1     Running   0          11s
+helloworld-controller-sbp8v   1/1     Running   0          9m38s
+helloworld-controller-vwhg8   1/1     Running   0          6m32s
+helloworld-controller-xzkrd   1/1     Running   0          10s
+
+crawfpi@pf22z9r820s1:~$ kubectl scale --replicas=1 rc/helloworld-controller
+replicationcontroller/helloworld-controller scaled
+
+crawfpi@pf22z9r820s1:~$ kubectl get po
+NAME                          READY   STATUS        RESTARTS   AGE
+helloworld-controller-6kh44   1/1     Terminating   0          8m17s
+helloworld-controller-gd57j   1/1     Terminating   0          8m57s
+helloworld-controller-gwrd9   1/1     Terminating   0          116s
+helloworld-controller-nbzqx   1/1     Terminating   0          116s
+helloworld-controller-qmz85   1/1     Terminating   0          116s
+helloworld-controller-sbp8v   1/1     Running       0          11m
+helloworld-controller-vwhg8   1/1     Terminating   0          8m17s
+helloworld-controller-xzkrd   1/1     Terminating   0          115s
+
+crawfpi@pf22z9r820s1:~$ kubectl get po
+NAME                          READY   STATUS    RESTARTS   AGE
+helloworld-controller-sbp8v   1/1     Running   0          12m
+
+
+# Delete the pods associated with the controller by deleting the controller
+crawfpi@pf22z9r820s1:~$ kubectl delete rc/helloworld-controller
+replicationcontroller "helloworld-controller" deleted
+
+crawfpi@pf22z9r820s1:~$ kubectl get po
+NAME                          READY   STATUS        RESTARTS   AGE
+helloworld-controller-sbp8v   0/1     Terminating   0          14m
+
+crawfpi@pf22z9r820s1 ~$ kubectl get po
+No resources found in default namespace.
+
+

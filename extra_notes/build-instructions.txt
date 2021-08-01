@@ -1,0 +1,8 @@
+# Note I am building the images of the nodetestjs app then tagging and pushing
+# as crawfpi/myimage:v1 or crawfpi/myimagev2
+# Just understand what you are doing
+
+crawfpi@pf22z9r820s1:~$ docker tag nodejstest:v2 crawfpi/myimage:v2
+
+crawfpi@pf22z9r820s1:~$ docker push crawfpi/myimage:v2
+The push refers to repository [docker.io/crawfpi/myimage]

@@ -1,0 +1,191 @@
+https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+# Updated the deployment apiVersion from the videos to match above apps/v1
+# also updated to add the required selector for apps: helloworld needed in latest version
+
+
+# Create the deployment
+
+crawfpi@pf22z9r820s1~ $ kubectl create -f deployment-helloworld.yml
+deployment.apps/helloworld-deployment created
+
+
+# get the deployments
+kubectl get deployments
+
+# shows that the 4 replicas requested are available now and up to date matching the version I requested
+crawfpi@pf22z9r820s1:~$ kubectl get deployments
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+helloworld-deployment   4/4     4            4           96s
+
+
+# get the replica sets - to show the current replicator set being used
+kubectl get rs
+
+crawfpi@pf22z9r820s1:~$ kubectl get rs
+NAME                              DESIRED   CURRENT   READY   AGE
+helloworld-deployment-986dcb47b   4         4         4       2m35s
+
+# got pods and show the labels associated with the pods and the metadata app label associated
+kubectl get po --show-labels
+
+crawfpi@pf22z9r820s1:~$ kubectl get po --show-labels
+NAME                                    READY   STATUS    RESTARTS   AGE     LABELS
+helloworld-deployment-986dcb47b-5wrt7   1/1     Running   0          4m37s   app=helloworld,pod-template-hash=986dcb47b
+helloworld-deployment-986dcb47b-bwbvx   1/1     Running   0          4m37s   app=helloworld,pod-template-hash=986dcb47b
+helloworld-deployment-986dcb47b-c9m6s   1/1     Running   0          4m37s   app=helloworld,pod-template-hash=986dcb47b
+helloworld-deployment-986dcb47b-s8nv8   1/1     Running   0          4m37s   app=helloworld,pod-template-hash=986dcb47b
+
+
+# get the deployment status - show successfully a rolled out version
+kubectl rollout status deployment/helloworld-deployment
+
+crawfpi@pf22z9r820s1:~$ kubectl rollout status deployment/helloworld-deployment
+deployment "helloworld-deployment" successfully rolled out
+
+
+# Check the version of the current dfeployment (v1)
+# expose the deployment 
+
+crawfpi@pf22z9r820s1:~$ kubectl expose deployment helloworld-deployment --type=NodePort
+
+crawfpi@pf22z9r820s1:~$ kubectl get service
+NAME                    TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+helloworld-deployment   NodePort    10.96.64.157   <none>        3000:31368/TCP   20s
+kubernetes              ClusterIP   10.96.0.1      <none>        443/TCP          2d15h
+
+# Describe the service to get the endpoints to use if using from another pod or use minikube to get the external url 
+
+crawfpi@pf22z9r820s1:~$ kubectl describe service helloworld-deployment
+Name:                     helloworld-deployment
+Namespace:                default
+Labels:                   <none>
+Annotations:              <none>
+Selector:                 app=helloworld
+Type:                     NodePort
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.96.64.157
+IPs:                      10.96.64.157
+Port:                     <unset>  3000/TCP
+TargetPort:               3000/TCP
+NodePort:                 <unset>  31368/TCP
+Endpoints:                172.17.0.3:3000,172.17.0.4:3000,172.17.0.5:3000 + 1 more...
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Events:                   <none>
+
+# can use minikube to get the url to attach to - or could use the Ednpot
+
+crawfpi@pf22z9r820s1:~$ minikube service helloworld-deployment --url
+🏃  Starting tunnel for service helloworld-deployment.
+|-----------|-----------------------|-------------|------------------------|
+| NAMESPACE |         NAME          | TARGET PORT |          URL           |
+|-----------|-----------------------|-------------|------------------------|
+| default   | helloworld-deployment |             | http://127.0.0.1:45205 |
+|-----------|-----------------------|-------------|------------------------|
+http://127.0.0.1:45205
+
+$ curl http://127.0.0.1:45205
+Hello World!
+
+
+
+# update the image used of a deployment to a new image and retest as above
+kubectl set image deployment/helloworld-deployment node=crawfpi/myimage:v2
+
+# Check the deployment - here mine failed as it fails to pull the image without the secret set
+crawfpi@pf22z9r820s1:~$ kubectl rollout status deployment/helloworld-deployment
+Waiting for deployment "helloworld-deployment" rollout to finish: 2 out of 4 new replicas have been updated...
+
+# Used a simple pod deployment to pull the image as it had the secret set in it already and then the image is cached
+# or can edit as below.  My original secret in the deployment file didnt work from the docker config - see secrets.txt
+# as to how it was changed.
+
+# After the image is availabel and already pulled.
+
+crawfpi@pf22z9r820s1:~$ kubectl set image deployment/helloworld-deployment node=crawfpi/myimage:v2
+deployment.apps/helloworld-deployment image updated
+crawfpi@pf22z9r820s1:~$ kubectl rollout status deployment/helloworld-deployment
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+deployment "helloworld-deployment" successfully rolled out
+crawfpi@pf22z9r820s1:~$
+
+
+# I created a v3 and edited the deployment - the deployment was still using the old secret so couldnt update
+# until this was changed too
+
+# edit a deployment to also change the version used
+kubectl edit deployment/helloworld-deployment
+
+crawfpi@pf22z9r820s1$ kubectl edit deployment/helloworld-deployment
+deployment.apps/helloworld-deployment edited
+crawfpi@pf22z9r820s1:/mnt/c/Users/crawfpi/OneDrive - Chevron/Siberian/nodejstest$ kubectl rollout status deployment/helloworld-deployment
+Waiting for deployment "helloworld-deployment" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 2 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 2 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 of 4 updated replicas are available...
+deployment "helloworld-deployment" successfully rolled out
+
+$ curl http://127.0.0.1:34831
+Hello World v3
+
+
+# get the rollout status
+kubectl rollout status deployment/helloworld-deployment
+
+# get the rollout history - 
+kubectl rollout history deployment/helloworld-deployment
+
+deployment.apps/helloworld-deployment
+REVISION  CHANGE-CAUSE
+5         <none>
+6         <none>
+
+# can edit the history limits by adding revisionHistoryLimit: 100 - after the replicase setting in the container
+
+# undo the rollout - and rollback to previous version
+kubectl rollout undo deployment/helloworld-deployment
+
+Will roll back - especially usefull if you screw up the deployment
+
+# Before 
+
+$ curl http://127.0.0.1:39177
+Hello World v3
+
+crawfpi@pf22z9r820s1~$ kubectl rollout undo deployment/helloworld-deployment
+deployment.apps/helloworld-deployment rolled back
+
+$ curl http://127.0.0.1:39177
+Hello World  (this was really the v2 version - I just forgot to add v2 at the end)
+
+crawfpi@pf22z9r820s1:/mnt/c/Users/crawfpi/OneDrive - Chevron/Siberian/nodejstest$ kubectl set image deployment/helloworld-deployment node=crawfpi/myimage:v1
+deployment.apps/helloworld-deployment image updated
+crawfpi@pf22z9r820s1:/mnt/c/Users/crawfpi/OneDrive - Chevron/Siberian/nodejstest$ kubectl rollout status deployment/helloworld-deployment
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 out of 4 new replicas have been updated...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "helloworld-deployment" rollout to finish: 3 of 4 updated replicas are available...
+deployment "helloworld-deployment" successfully rolled out
+
+crawfpi@pf22z9r820s1~$ kubectl rollout history deployment/helloworld-deployment
+deployment.apps/helloworld-deployment
+REVISION  CHANGE-CAUSE
+7         <none>
+9         <none>
+10        <none>
+11        <none>
+
+# And go to a specific version - would need some CHANGE-CAUSE history here to know what to go back to
+crawfpi@pf22z9r820s1~ $  kubectl rollout undo deployment/helloworld-deployment --to-revision=10

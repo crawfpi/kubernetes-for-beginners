@@ -1,0 +1,16 @@
+# Install minikube in wsl
+# https://minikube.sigs.k8s.io/docs/start/
+
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+# Start minikube
+minikube start
+
+
+# Setup git credentials
+# 
+# https://docs.microsoft.com/en-us/windows/wsl/tutorials/wsl-git
+
+git config --global credential.helper "/mnt/c/Program\ Files/Git/mingw64/libexec/git-core/git-credential-manager-core.exe"
+

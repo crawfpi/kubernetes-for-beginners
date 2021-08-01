@@ -1,0 +1,68 @@
+# From the pod file
+
+kubectl create -f pod-helloworld.yml
+
+# get the pod and see it is created - if issues then use the secrets to pull image
+kubectl get pods
+
+
+# port 3000 is exposed in the container
+# port forward to 8081 and test
+kubectl port-forward nodehelloworld 8081:3000
+curl localhost:8081
+
+# or create a service
+kubectl expose pod nodehelloworld --type=NodePort --name=nodehelloworld-service
+
+# check the service
+minikube service nodehelloworld-service --url
+
+#crawfpi@DESKTOP-J0ILLFT:~$ minikube service nodehelloworld-service --url
+#🏃  Starting tunnel for service nodehelloworld-service.
+#|-----------|------------------------|-------------|------------------------|
+#| NAMESPACE |          NAME          | TARGET PORT |          URL           |
+#|-----------|------------------------|-------------|------------------------|
+#| default   | nodehelloworld-service |             | http://127.0.0.1:36195 |
+#|-----------|------------------------|-------------|------------------------|
+
+curl http://127.0.0.1:36195
+
+
+
+kubectl describe service nodehelloworld-service
+
+# Name:                     nodehelloworld-service
+# Namespace:                default
+# Labels:                   app=helloworld
+# Annotations:              <none>
+# Selector:                 app=helloworld
+# Type:                     NodePort
+# IP Family Policy:         SingleStack
+# IP Families:              IPv4
+# IP:                       10.101.152.31
+# IPs:                      10.101.152.31
+# Port:                     <unset>  3000/TCP
+# TargetPort:               3000/TCP
+# NodePort:                 <unset>  30256/TCP
+# Endpoints:                172.17.0.3:3000
+# Session Affinity:         None
+# External Traffic Policy:  Cluster
+# Events:                   <none>
+
+# Start another container on the same network
+
+kubectl run -i --tty centos --image=centos:7 --restart=Never
+
+# This starts a centos container (alpine would have been better)
+[root@centos /]# curl
+curl: try 'curl --help' or 'curl --manual' for more information
+[root@centos /]# curl  172.17.0.3:3000
+Hello World![root@centos /]# exit
+exit
+
+# with alpine
+kubectl run -i --tty alpine --image=alpine --restart=Never
+apk --no-cache add curl
+
+/ # curl  172.17.0.3:3000
+Hello World!/ #
