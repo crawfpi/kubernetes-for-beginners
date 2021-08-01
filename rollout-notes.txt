@@ -1,4 +1,6 @@
-# Creat Deployment
+https://kubernetes.io/docs/reference/kubectl/cheatsheet/
+
+# Create Deployment
 kubectl create -f deployments-rollout.yaml
 kubectl get po
 
@@ -16,4 +18,135 @@ deployment.apps/nginx-deployment
 REVISION  CHANGE-CAUSE
 1         <none>
 
+# Delete the deploument and wait for pods to delete
 
+$ kubectl delete deployment nginx-deployment
+deployment.apps "nginx-deployment" deleted
+
+$ kubectl get po
+NAME                                READY   STATUS        RESTARTS   AGE
+nginx-deployment-78b96ff5d6-88xkf   0/1     Terminating   0          5m51s
+nginx-deployment-78b96ff5d6-cp22z   0/1     Terminating   0          5m51s
+nginx-deployment-78b96ff5d6-mbhrc   0/1     Terminating   0          5m51s
+nginx-deployment-78b96ff5d6-tt57z   0/1     Terminating   0          5m51s
+nginx-deployment-78b96ff5d6-xnrts   0/1     Terminating   0          5m51s
+nginx-deployment-78b96ff5d6-xpmwf   0/1     Terminating   0          5m51s
+
+
+# Redeploy - with the record option that adds to the history
+
+$ kubectl create -f deployments-rollout.yaml --record
+deployment.apps/nginx-deployment created
+$ kubectl rollout status deployment nginx-deployment
+Waiting for deployment "nginx-deployment" rollout to finish: 0 of 6 updated replicas are available...
+Waiting for deployment "nginx-deployment" rollout to finish: 1 of 6 updated replicas are available...
+Waiting for deployment "nginx-deployment" rollout to finish: 2 of 6 updated replicas are available...
+Waiting for deployment "nginx-deployment" rollout to finish: 3 of 6 updated replicas are available...
+Waiting for deployment "nginx-deployment" rollout to finish: 4 of 6 updated replicas are available...
+Waiting for deployment "nginx-deployment" rollout to finish: 5 of 6 updated replicas are available...
+deployment "nginx-deployment" successfully rolled out
+
+
+# Check history and see that the command used to change the deployment is recorded
+$ kubectl rollout history deployment nginx-deployment
+deployment.apps/nginx-deployment
+REVISION  CHANGE-CAUSE
+1         kubectl create --filename=deployments-rollout.yaml --record=true
+
+# In the annotations section of the deployment the command used to deploy is recorded
+$ kubectl describe deployment nginx-deployment
+Name:                   nginx-deployment
+Namespace:              default
+CreationTimestamp:      Sun, 01 Aug 2021 09:20:40 -0500
+Labels:                 app=nginx
+                        tier=frontend
+Annotations:            deployment.kubernetes.io/revision: 1
+                        kubernetes.io/change-cause: kubectl create --filename=deployments-rollout.yaml --record=true
+
+# Currently usiung nginx 1.21.1 (latest from Docker Hub at time of writing).  Change to 1.20
+# i.e. image: ngine:1.20
+
+$ kubectl edit deployment nginx-deployment --record
+deployment.apps/nginx-deployment edited
+
+$ kubectl get po
+NAME                                READY   STATUS              RESTARTS   AGE
+nginx-deployment-78b96ff5d6-2ghb2   1/1     Running             0          6m11s
+nginx-deployment-78b96ff5d6-9wzp9   0/1     Terminating         0          6m11s
+nginx-deployment-78b96ff5d6-nplrw   0/1     Terminating         0          6m11s
+nginx-deployment-78b96ff5d6-t8bln   0/1     Terminating         0          6m11s
+nginx-deployment-7b58467887-6xcfk   1/1     Running             0          14s
+nginx-deployment-7b58467887-85dd2   0/1     ContainerCreating   0          4s
+nginx-deployment-7b58467887-jkx96   1/1     Running             0          14s
+nginx-deployment-7b58467887-k8chz   1/1     Running             0          5s
+nginx-deployment-7b58467887-l9g62   0/1     ContainerCreating   0          3s
+nginx-deployment-7b58467887-zj6gm   1/1     Running             0          14s
+
+
+# Describe a pod
+$ kubectl describe po nginx-deployment-7b58467887-6xcfk
+Containers:
+  nginx-container:
+    Container ID:   docker://b9bdfe15a8dc67b6d670e5c3734da8d54dc408ca2e147da77d39e4ec4f2afe35
+    Image:          nginx:1.20
+
+# get history
+$ kubectl rollout history deployment nginx-deployment
+deployment.apps/nginx-deployment
+REVISION  CHANGE-CAUSE
+1         kubectl create --filename=deployments-rollout.yaml --record=true
+2         kubectl edit deployment nginx-deployment --record=true
+
+# Can also change the image version using the set image deployment command to go to an even older version
+# Note nginx-container is the name of the cointainer I used in the inital deployments file
+    spec:
+      containers:
+        - name: nginx-container
+          image: nginx
+
+
+$ kubectl set image deployment nginx-deployment nginx-container=nginx:1.19 --record
+deployment.apps/nginx-deployment image updated
+
+
+# Checking one of the new pods:
+
+$ kubectl describe po nginx-deployment-7b66549b7-7b2xk
+Containers:
+  nginx-container:
+    Container ID:   docker://0a36906ee2bd90b6f1d15b5b1cdbc47b11bb65f4ccde083c16788f72adb3ea58
+    Image:          nginx:1.19
+
+# Check history - shows that #2 is wrong syntax
+$ kubectl rollout history deployment nginx-deployment
+deployment.apps/nginx-deployment
+REVISION  CHANGE-CAUSE
+1         kubectl create --filename=deployments-rollout.yaml --record=true
+2         kubectl set image deployment nginx-deployment nginx=nginx:1.19 --record=true
+3         kubectl set image deployment nginx-deployment nginx-container=nginx:1.19 --record=true
+
+
+# Rollback and undo porevious update, i.e. back to 1.20
+$ kubectl rollout undo deployment nginx-deployment
+deployment.apps/nginx-deployment rolled back
+
+# A check with describe pod shows it is 1.20
+Containers:
+  nginx-container:
+    Container ID:   docker://5726c909fb1af7d0bc2872e6bba3a4ef5818678b4a317e75043295e3253f7f69
+    Image:          nginx:1.20
+
+# Also can see by describing the deployment:
+$ kubectl describe deployment nginx-deployment
+
+
+
+Pod Template:
+  Labels:  app=nginx
+           tier=frontend
+  Containers:
+   nginx-container:
+    Image:        nginx:1.20
+
+
+# Note history length can be edited and set
