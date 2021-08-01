@@ -44,3 +44,148 @@ kodekloud/examplevotingapp_vote:v1
 kodekloud/examplevotingapp_worker:v1
 redis - redis
 postgresql - db
+
+
+# Deploy the services and the pods
+$ kubectl create -f voting-app-pod.yaml
+pod/voting-app-pod created
+$ kubectl get po
+NAME             READY   STATUS    RESTARTS   AGE
+voting-app-pod   1/1     Running   0          37s
+$ kubectl create -f voting-app-service.yaml
+service/voting-service created
+
+$ kubectl get svc
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        21h
+voting-service   NodePort    10.97.113.199   <none>        80:30004/TCP   8s
+
+
+$ kubectl get svc,po
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        21h
+service/voting-service   NodePort    10.97.113.199   <none>        80:30004/TCP   35s
+
+NAME                 READY   STATUS    RESTARTS   AGE
+pod/voting-app-pod   1/1     Running   0          82s
+
+$ minikube service voting-service --url
+🏃  Starting tunnel for service voting-service.
+|-----------|----------------|-------------|------------------------|
+| NAMESPACE |      NAME      | TARGET PORT |          URL           |
+|-----------|----------------|-------------|------------------------|
+| default   | voting-service |             | http://127.0.0.1:43431 |
+|-----------|----------------|-------------|------------------------|
+http://127.0.0.1:43431
+
+
+# And test the URL http://127.0.0.1:43431 is browser - it works !!
+
+# create the redis pod and service
+
+$ kubectl create -f redis-pod.yaml
+pod/redis-pod created
+$ kubectl get po
+NAME             READY   STATUS    RESTARTS   AGE
+redis-pod        1/1     Running   0          6s
+voting-app-pod   1/1     Running   0          5m2s
+$ kubectl create -f redis-service.yaml
+service/redis created
+$ kubectl get svc,po
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        21h
+service/redis            ClusterIP   10.104.31.236   <none>        6379/TCP       4s
+service/voting-service   NodePort    10.97.113.199   <none>        80:30004/TCP   4m26s
+
+NAME                 READY   STATUS    RESTARTS   AGE
+pod/redis-pod        1/1     Running   0          17s
+pod/voting-app-pod   1/1     Running   0          5m13s
+
+
+# Create postgres database pod and service
+$ kubectl create -f postgres-pod.yaml
+pod/postgres-pod created
+
+$ kubectl get po
+NAME             READY   STATUS    RESTARTS   AGE
+postgres-pod     1/1     Running   0          33s
+redis-pod        1/1     Running   0          110s
+voting-app-pod   1/1     Running   0          6m46s
+
+$ kubectl create -f postgres-service.yaml
+service/db created
+
+$ kubectl get svc,po
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/db               ClusterIP   10.100.33.242   <none>        5432/TCP       3s
+service/kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        21h
+service/redis            ClusterIP   10.104.31.236   <none>        6379/TCP       115s
+service/voting-service   NodePort    10.97.113.199   <none>        80:30004/TCP   6m17s
+
+NAME                 READY   STATUS    RESTARTS   AGE
+pod/postgres-pod     1/1     Running   0          51s
+pod/redis-pod        1/1     Running   0          2m8s
+pod/voting-app-pod   1/1     Running   0          7m4s
+
+# Create the worker (takes a minute or more)
+$ kubectl create -f worker-pod.yaml
+pod/worker-app-pod created
+
+$ kubectl get po
+NAME             READY   STATUS    RESTARTS   AGE
+postgres-pod     1/1     Running   0          3m26s
+redis-pod        1/1     Running   0          4m43s
+voting-app-pod   1/1     Running   0          9m39s
+worker-app-pod   1/1     Running   0          87s
+
+
+# finaly create pod and service for result application
+
+$ kubectl create -f result-app-pod.yaml
+pod/result-app-pod created
+
+$ kubectl get po
+NAME             READY   STATUS    RESTARTS   AGE
+postgres-pod     1/1     Running   0          5m
+redis-pod        1/1     Running   0          6m17s
+result-app-pod   1/1     Running   0          20s
+voting-app-pod   1/1     Running   0          11m
+worker-app-pod   1/1     Running   0          3m1s
+
+$ kubectl create -f result-app-service.yaml
+service/result-service created
+
+$ kubectl get svc
+NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+db               ClusterIP   10.100.33.242   <none>        5432/TCP       4m37s
+kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        21h
+redis            ClusterIP   10.104.31.236   <none>        6379/TCP       6m29s
+result-service   NodePort    10.97.24.36     <none>        80:30005/TCP   5s
+voting-service   NodePort    10.97.113.199   <none>        80:30004/TCP   10m
+
+
+# Get the URLS for both - these need to be done in different windows to make it work
+
+$  minikube service result-service --url
+🏃  Starting tunnel for service result-service.
+|-----------|----------------|-------------|------------------------|
+| NAMESPACE |      NAME      | TARGET PORT |          URL           |
+|-----------|----------------|-------------|------------------------|
+| default   | result-service |             | http://127.0.0.1:39821 |
+|-----------|----------------|-------------|------------------------|
+http://127.0.0.1:39821
+
+$  minikube service voting-service --url
+🏃  Starting tunnel for service voting-service.
+|-----------|----------------|-------------|------------------------|
+| NAMESPACE |      NAME      | TARGET PORT |          URL           |
+|-----------|----------------|-------------|------------------------|
+| default   | voting-service |             | http://127.0.0.1:34323 |
+|-----------|----------------|-------------|------------------------|
+http://127.0.0.1:34323
+
+# And can see the voting changes - not easy on linux as the a separate tunnel needed each time
+
+# All this can now be changed to work with deployments:
+https://chevron.udemy.com/course/learn-kubernetes/learn/lecture/21126556#overview
+
