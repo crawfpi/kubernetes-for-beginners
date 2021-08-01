@@ -1,10 +1,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-deployments
+  name: nginx-deployment
   labels:
     app: nginx
-    type: frontend
+    tier: frontend
 
 spec:
   template:
