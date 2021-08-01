@@ -28,3 +28,60 @@ spec:
 # Random algorithm with session affinity is used to automatically make the service a 
 # loadbalancer on a single node
 
+
+# note this is assuming that the deployments in the previous stage are done, i.e from deployments-rollout.yaml
+
+$ kubectl get deployment
+NAME               READY   UP-TO-DATE   AVAILABLE   AGE
+nginx-deployment   6/6     6            6           59m
+
+# Creat the new service
+$ kubectl create -f service-definition.yaml
+service/nginx-service created
+
+$ kubectl get service
+NAME            TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE
+kubernetes      ClusterIP   10.96.0.1      <none>        443/TCP        20h
+nginx-service   NodePort    10.109.4.249   <none>        80:30008/TCP   8s
+
+# on minikube get the url using the minikube service command - which is a tunnel to the nginx-service from 
+# our machine
+
+$ minikube service nginx-service --url
+🏃  Starting tunnel for service nginx-service.
+|-----------|---------------|-------------|------------------------|
+| NAMESPACE |     NAME      | TARGET PORT |          URL           |
+|-----------|---------------|-------------|------------------------|
+| default   | nginx-service |             | http://127.0.0.1:46391 |
+|-----------|---------------|-------------|------------------------|
+http://127.0.0.1:46391
+❗  Because you are using a Docker driver on linux, the terminal needs to be open to run it.
+
+$ curl http://127.0.0.1:46391
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+
+# The service groups the pods together to create a single IP and interface
