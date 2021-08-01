@@ -189,3 +189,113 @@ http://127.0.0.1:34323
 # All this can now be changed to work with deployments:
 https://chevron.udemy.com/course/learn-kubernetes/learn/lecture/21126556#overview
 
+
+# Deploy the voting app and service
+
+$ kubectl create -f deploy/voting-app-deploy.yaml
+deployment.apps/voting-app-deploy created
+$  kubectl create -f services/voting-app-service.yaml
+service/voting-service created
+
+$ kubectl get po,svc
+NAME                                     READY   STATUS    RESTARTS   AGE
+pod/voting-app-deploy-547678ccc7-rb6nr   1/1     Running   0          66s
+
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes       ClusterIP   10.96.0.1       <none>        443/TCP        25h
+service/voting-service   NodePort    10.108.204.83   <none>        80:30004/TCP   52s
+
+# And check on the service - it is running ok
+ minikube service voting-service --url
+
+
+# deploy the redis app and service
+$ kubectl create -f deploy/redis-deploy.yaml
+deployment.apps/redis-deploy created
+$ kubectl create -f services/redis-service.yaml
+service/redis created
+$ kubectl get po,svc
+NAME                                     READY   STATUS    RESTARTS   AGE
+pod/redis-deploy-5d7988b4bb-l7dh7        1/1     Running   0          15s
+pod/voting-app-deploy-547678ccc7-rb6nr   1/1     Running   0          5m25s
+
+NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+service/kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP        25h
+service/redis            ClusterIP   10.109.126.190   <none>        6379/TCP       4s
+service/voting-service   NodePort    10.108.204.83    <none>        80:30004/TCP   5m11s
+
+
+# and deploy the postgres 
+$ kubectl create -f deploy/postgres-deploy.yaml
+deployment.apps/postgres-deploy created
+$ kubectl create -f services/postgres-service.yaml
+service/db created
+$ kubectl get po,svc
+NAME                                     READY   STATUS    RESTARTS   AGE
+pod/postgres-deploy-6f787b796b-dwbkm     1/1     Running   0          8s
+pod/redis-deploy-5d7988b4bb-l7dh7        1/1     Running   0          3m5s
+pod/voting-app-deploy-547678ccc7-rb6nr   1/1     Running   0          8m15s
+
+NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+service/db               ClusterIP   10.109.189.57    <none>        5432/TCP       2s
+service/kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP        25h
+service/redis            ClusterIP   10.109.126.190   <none>        6379/TCP       2m54s
+service/voting-service   NodePort    10.108.204.83    <none>        80:30004/TCP   8m1s
+
+# Create the worker deployment (no service)
+
+$ kubectl create -f deploy/worker-app-deploy.yaml
+deployment.apps/worker-app-deploy created
+$ kubectl get po,svc
+NAME                                     READY   STATUS    RESTARTS   AGE
+pod/postgres-deploy-6f787b796b-dwbkm     1/1     Running   0          2m2s
+pod/redis-deploy-5d7988b4bb-l7dh7        1/1     Running   0          4m59s
+pod/voting-app-deploy-547678ccc7-rb6nr   1/1     Running   0          10m
+pod/worker-app-deploy-799b5fb489-wbfjm   1/1     Running   0          3s
+
+NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+service/db               ClusterIP   10.109.189.57    <none>        5432/TCP       116s
+service/kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP        25h
+service/redis            ClusterIP   10.109.126.190   <none>        6379/TCP       4m48s
+service/voting-service   NodePort    10.108.204.83    <none>        80:30004/TCP   9m55s
+
+
+# Finally again the result deploy and service 
+
+$ kubectl create -f deploy/result-app-deploy.yaml
+deployment.apps/result-app-deploy created
+$ kubectl create -f services/result-app-service.yaml
+service/result-service created
+$ kubectl get po,svc
+NAME                                     READY   STATUS    RESTARTS   AGE
+pod/postgres-deploy-6f787b796b-dwbkm     1/1     Running   0          3m27s
+pod/redis-deploy-5d7988b4bb-l7dh7        1/1     Running   0          6m24s
+pod/result-app-deploy-6cb79db456-cswt9   1/1     Running   0          9s
+pod/voting-app-deploy-547678ccc7-rb6nr   1/1     Running   0          11m
+pod/worker-app-deploy-799b5fb489-wbfjm   1/1     Running   0          88s
+
+NAME                     TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE
+service/db               ClusterIP   10.109.189.57    <none>        5432/TCP       3m21s
+service/kubernetes       ClusterIP   10.96.0.1        <none>        443/TCP        25h
+service/redis            ClusterIP   10.109.126.190   <none>        6379/TCP       6m13s
+service/result-service   NodePort    10.104.25.222    <none>        80:30005/TCP   2s
+service/voting-service   NodePort    10.108.204.83    <none>        80:30004/TCP   11m
+
+# Scale the deployments to 3
+
+$ kubectl scale deployment voting-app-deploy --replicas=3
+deployment.apps/voting-app-deploy scaled
+
+$ kubectl scale deployment result-app-deploy --replicas=3
+deployment.apps/result-app-deploy scaled
+$ kubectl get po
+NAME                                 READY   STATUS    RESTARTS   AGE
+postgres-deploy-6f787b796b-dwbkm     1/1     Running   0          7m51s
+redis-deploy-5d7988b4bb-l7dh7        1/1     Running   0          10m
+result-app-deploy-6cb79db456-cswt9   1/1     Running   0          4m33s
+result-app-deploy-6cb79db456-fsdvs   1/1     Running   0          8s
+result-app-deploy-6cb79db456-ghcp4   1/1     Running   0          8s
+voting-app-deploy-547678ccc7-2sf2n   1/1     Running   0          19s
+voting-app-deploy-547678ccc7-dd7nb   1/1     Running   0          19s
+voting-app-deploy-547678ccc7-rb6nr   1/1     Running   0          15m
+worker-app-deploy-799b5fb489-wbfjm   1/1     Running   0          5m52s
