@@ -17,7 +17,7 @@ spec:
       port: 80
       nodePort: 30008
 
-  # Selector labels are from the pod definition file to link service to pod
+  # Selector labels are from the pod definition file / deployments defintion to link service to pod
   selector:
     app: nginx
     tier: frontend
@@ -25,5 +25,6 @@ spec:
 # use kubectl create -f service-definition.yaml to create service
 
 # Multiple pods may be used and need to load balance across them or select one of the 3
-# Random algorithm with session affinity is used to automatically make the service a loadbalancer
+# Random algorithm with session affinity is used to automatically make the service a 
+# loadbalancer on a single node
 

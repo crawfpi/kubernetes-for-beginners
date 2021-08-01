@@ -3,13 +3,6 @@ kind: Service
 metadata:
   name: nginx-service
 
-# targetPort - port of the pod and container
-# port - port of the service
-# if port not assigned then assumes this is the same as the targetPort
-# nodePort - port of the node itself that is used to access the service and pod
-# if nodePort not defined then it is auto assigned
-# Range is 30000 - 32767
-
 spec:
   type: NodePort
   ports:
@@ -17,9 +10,8 @@ spec:
       port: 80
       nodePort: 30008
 
-  # Selector labels are from the pod definition file to link service to pod
+# selector from the pod definition in the deployments
   selector:
     app: nginx
     tier: frontend
 
-# use kubectl create -f service-definition.yaml to create service
