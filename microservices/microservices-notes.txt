@@ -1,0 +1,40 @@
+# Create voting app of multiple components
+
+voting app
+in memory db - redis
+worker
+db - postgres sql
+result app
+
+This would be of multiple containers on docker that have to be linked in docker:
+
+# for the redis container
+docker run -d --name=redis redis
+
+# for the postgres sql container
+docker run -d --name=db postgress:9.4
+
+# voting app - not sure wher ethe container is coming from?  add the link to link the containers
+docker run -d --name=vote -p 5000:80 --link redis:redis voting-app
+
+# results app
+docker run -d --name=results -p 5001:80 --link db:db results-app
+
+# worker
+docker run -d --name=worker --link db:db --link redis:redis worker
+
+https://chevron.udemy.com/course/learn-kubernetes/learn/lecture/21126242#overview
+
+# Using the links will be deprecated - so use kubernetes!
+
+- deploy pods for the containers (convert to deployments)
+- enable connectivity between services
+    - worker app reads from redis and writes to postgresql
+
+- voting-app and result-app access by users on port 80
+
+- service (redis) created for redis pod to allow access by other pods - named redis
+- service (db) also created for postgresql - named db
+- service for voting-app and result-app set to NodePort
+
+
